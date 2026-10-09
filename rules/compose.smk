@@ -98,12 +98,13 @@ def get_compose_inputs(w):
             avail_profile=resources("avail_profile.csv"),
             dsm_profile=resources("dsm_profile.csv"),
             heat_dsm_profile=resources("residential_heat_dsm_profile.csv"),
-            biomass_potentials=resources("biomass_potentials_{horizon}.csv"),
             h2_cavern=(
                 resources("salt_cavern_potentials.csv")
                 if sector["hydrogen_underground_storage"]
                 else []
             ),
+            co2_totals_name=resources("co2_totals.csv"),
+            biomass_potentials=resources("biomass_potentials_custom_{horizon}.csv"),
             clustered_pop_layout=resources("pop_layout.csv"),
             industrial_demand=resources("industrial_energy_demand_{horizon}.csv"),
             hourly_heat_demand_total=resources("hourly_heat_demand_total.nc"),

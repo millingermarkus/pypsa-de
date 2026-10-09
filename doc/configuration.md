@@ -582,6 +582,7 @@ Only used for sector-coupling studies.
 
     {{ schema_table("sector") | indent(4) }}
 
+{{ schema_table("sector") }}
 
 **YAML Syntax**
 
