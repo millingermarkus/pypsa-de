@@ -576,7 +576,7 @@ def unravel_carbonaceous_fuels(
             unit="MWh_LHV",
         )
         industrial_demand = (
-            pd.read_csv(inputs.industrial_demand, index_col=0) * 1e6
+            pd.read_csv(inputs.industrial_demand, header=1, index_col=0) * 1e6
         )  # TWh/a to MWh/a
         DE_meoh = (
             industrial_demand["methanol"].filter(like="DE").sum() / 8760
@@ -1476,7 +1476,7 @@ def scale_industry_elec_to_2025(n, industrial_energy_demand_2025):
     )
 
     model_demand_2025 = (
-        (pd.read_csv(industrial_energy_demand_2025, index_col=0) * 1e6)
+        (pd.read_csv(industrial_energy_demand_2025, header=1, index_col=0) * 1e6)
         .filter(like="DE", axis=0)
         .sum()["electricity"]
     )
