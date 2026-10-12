@@ -562,6 +562,7 @@ energy:
 biomass:
   year: 2030
   scenario: ENS_Med
+  biomip_scenario: BAU
   classes:
     solid biomass:
     - Agricultural waste
