@@ -3935,6 +3935,7 @@ def add_biomass(
     biomass_potentials_file,
     biomass_transport_costs_file=None,
     nyears=1,
+    unsustainable_biomass_upstream_file=None,
 ):
     """
     Add biomass-related components to the PyPSA network.
@@ -3970,6 +3971,12 @@ def add_biomass(
         Required if biomass_transport or biomass_spatial options are True.
     nyears : float
         Number of years for which to scale the biomass potentials.
+    unsustainable_biomass_upstream_file : str, optional
+        Path to CSV file with, per node, the shares of bioethanol and biodiesel
+        in the unsustainable bioliquids ("bioethanol share", "biodiesel share"),
+        the upstream emission factors of "bioethanol", "biodiesel" and "solid
+        biomass" (tCO2eq/MWh) and the "solid biomass price" (EUR/MWh). Required
+        if unsustainable_biomass_upstream_emissions is True.
 
     Returns
     -------
@@ -4034,6 +4041,46 @@ def add_biomass(
         unsustainable_liquid_biofuel_potentials_spatial = biomass_potentials[
             "unsustainable bioliquids"
         ].sum()
+
+    # upstream (feedstock cultivation) emissions of unsustainable biomass per
+    # node (tCO2eq/MWh): bioliquids weighted by the node's biofuel mix; solid
+    # biomass as willow, also priced at the willow price
+    upstream = options["unsustainable_biomass_upstream_emissions"]
+    if upstream:
+        upstream_data = pd.read_csv(unsustainable_biomass_upstream_file, index_col=0)
+        bioliquids_intensity = (
+            upstream_data["bioethanol share"] * upstream_data["bioethanol"]
+            + upstream_data["biodiesel share"] * upstream_data["biodiesel"]
+        )
+        solid_intensity = upstream_data["solid biomass"]
+        solid_price = upstream_data["solid biomass price"]
+
+        def weighted_mean(intensity, weight):
+            return (
+                (intensity * weight).sum() / weight.sum() if weight.sum() > 0 else 0.0
+            )
+
+        if options.get("biomass_spatial", options["biomass_transport"]):
+            bioliquids_upstream_emissions = bioliquids_intensity.rename(
+                index=lambda x: x + " unsustainable bioliquids"
+            )
+            solid_upstream_emissions = solid_intensity.rename(
+                index=lambda x: x + " unsustainable solid biomass"
+            )
+            solid_biomass_price = solid_price.rename(
+                index=lambda x: x + " unsustainable solid biomass"
+            )
+        else:
+            bioliquids_upstream_emissions = weighted_mean(
+                bioliquids_intensity, biomass_potentials["unsustainable bioliquids"]
+            )
+            solid_upstream_emissions = weighted_mean(
+                solid_intensity, biomass_potentials["unsustainable solid biomass"]
+            )
+            solid_biomass_price = solid_price.mean()
+    else:
+        bioliquids_upstream_emissions = 0.0
+        solid_biomass_price = costs.at["fuelwood", "fuel"]
 
     n.add("Carrier", "biogas")
     n.add("Carrier", "solid biomass")
@@ -4173,14 +4220,40 @@ def add_biomass(
             e_sum_max=unsustainable_biogas_potentials_spatial,
         )
 
+        # with upstream emissions, unsustainable solid biomass enters the solid
+        # biomass bus through a link that emits the cultivation emissions
+        if upstream:
+            n.add(
+                "Bus",
+                spatial.biomass.nodes_unsustainable,
+                location=spatial.biomass.locations,
+                carrier="unsustainable solid biomass",
+                unit="MWh_LHV",
+            )
+            n.add(
+                "Link",
+                spatial.biomass.nodes_unsustainable,
+                bus0=spatial.biomass.nodes_unsustainable,
+                bus1=spatial.biomass.nodes,
+                bus2="co2 atmosphere",
+                carrier="unsustainable solid biomass",
+                efficiency=1,
+                efficiency2=solid_upstream_emissions,
+                p_nom=unsustainable_solid_biomass_potentials_spatial,
+            )
+
         n.add(
             "Generator",
             spatial.biomass.nodes_unsustainable,
-            bus=spatial.biomass.nodes,
+            bus=(
+                spatial.biomass.nodes_unsustainable
+                if upstream
+                else spatial.biomass.nodes
+            ),
             carrier="unsustainable solid biomass",
             p_nom=unsustainable_solid_biomass_potentials_spatial,
             p_nom_extendable=False,
-            marginal_cost=costs.at["fuelwood", "fuel"],
+            marginal_cost=solid_biomass_price,
             e_sum_min=unsustainable_solid_biomass_potentials_spatial,
             e_sum_max=unsustainable_solid_biomass_potentials_spatial,
         )
@@ -4222,7 +4295,8 @@ def add_biomass(
             bus2="co2 atmosphere",
             carrier="unsustainable bioliquids",
             efficiency=1,
-            efficiency2=-costs.at["oil", "CO2 intensity"],
+            efficiency2=-costs.at["oil", "CO2 intensity"]
+            + bioliquids_upstream_emissions,
             p_nom=unsustainable_liquid_biofuel_potentials_spatial,
             marginal_cost=costs.at["BtL", "VOM"],
         )
@@ -4351,14 +4425,19 @@ def add_biomass(
             type="operational_limit",
         )
         if biomass_potentials["unsustainable solid biomass"].sum() > 0:
+            upstream_link = options["unsustainable_biomass_upstream_emissions"]
             n.add(
                 "Generator",
                 spatial.biomass.nodes_unsustainable,
                 suffix=" transported",
-                bus=spatial.biomass.nodes,
+                bus=(
+                    spatial.biomass.nodes_unsustainable
+                    if upstream_link
+                    else spatial.biomass.nodes
+                ),
                 carrier="unsustainable solid biomass",
                 p_nom=10000,
-                marginal_cost=costs.at["fuelwood", "fuel"]
+                marginal_cost=solid_biomass_price
                 + bus_transport_costs.rename(
                     dict(
                         zip(spatial.biomass.nodes, spatial.biomass.nodes_unsustainable)
@@ -4370,6 +4449,9 @@ def add_biomass(
             n.generators.loc[
                 n.generators.carrier == "unsustainable solid biomass", "e_sum_min"
             ] = 0
+            if upstream_link:
+                # room for the transported generator on the upstream emissions link
+                n.links.loc[spatial.biomass.nodes_unsustainable, "p_nom"] += 10000
 
             n.add(
                 "GlobalConstraint",
@@ -7094,6 +7176,7 @@ def main(
             biomass_potentials_file=inputs.biomass_potentials,
             biomass_transport_costs_file=inputs.biomass_transport_costs,
             nyears=nyears,
+            unsustainable_biomass_upstream_file=inputs.unsustainable_biomass_upstream,
         )
 
     if options["ammonia"]:

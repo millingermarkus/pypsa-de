@@ -187,6 +187,16 @@ for file name mappings and configuration changes in detail.
 
 * **Breaking:** `electricity: max_hours: iron-air` now counts hours at rated output rather than hours of stored energy, matching how duration and cost per kWh are quoted for iron-air. The store is therefore sized by `max_hours / efficiency_dispatch`, and the store cost of iron-air added as `Store` is converted to cost per MWh stored. Cost per MW is unchanged, so iron-air becomes more capable per euro and results including it will change ([#2298](https://github.com/PyPSA/pypsa-eur/pull/2298)).
 
+## Upcoming Release
+
+* Added the option `sector: unsustainable_biomass_upstream_emissions` to account for the upstream
+  (feedstock cultivation) emissions of the unsustainable bioliquids and solid biomass. Per-country emission
+  factors (JRC ENSPRESO cultivation emissions of starchy crops and rapeseed per unit of fuel, and of willow)
+  come from the new dataset `unsustainable_biomass_upstream`. The bioliquids factor is weighted by each
+  country's Eurostat production mix of biogasoline vs. biodiesels and added to the CO2 balance of the
+  `unsustainable bioliquids` link; unsustainable solid biomass enters the solid biomass bus through a new
+  link that emits the willow factor, and is priced at a single EU willow price.
+
 ## PyPSA-Eur v2026.08.0 (19th August 2026)
 
 **Features**

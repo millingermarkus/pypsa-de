@@ -1022,6 +1022,24 @@ if (GEM_GCCT_DATASET := dataset_version("gem_gcct"))["source"] in [
             copy2(input["xlsx"], output["xlsx"])
 
 
+if (
+    UNSUSTAINABLE_BIOMASS_UPSTREAM_DATASET := dataset_version("unsustainable_biomass_upstream")
+)["source"] in [
+    "primary",
+    "archive",
+]:
+
+    rule retrieve_unsustainable_biomass_upstream:
+        input:
+            csv=storage(UNSUSTAINABLE_BIOMASS_UPSTREAM_DATASET["url"]),
+        output:
+            csv=f"{UNSUSTAINABLE_BIOMASS_UPSTREAM_DATASET['folder']}/unsustainable_biomass_upstream.csv",
+        message:
+            "Retrieving upstream emission factors and price of unsustainable biomass"
+        run:
+            copy2(input["csv"], output["csv"])
+
+
 if (BFS_ROAD_VEHICLE_STOCK_DATASET := dataset_version("bfs_road_vehicle_stock"))[
     "source"
 ] in [

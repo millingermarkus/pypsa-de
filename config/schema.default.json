@@ -1997,6 +1997,26 @@
             }
           }
         },
+        "unsustainable_biomass_upstream": {
+          "description": "Configuration for a single data source.",
+          "properties": {
+            "source": {
+              "default": "archive",
+              "description": "Source of the data. 'archive' retrieves pre-built data, 'primary' retrieves from primary source.",
+              "enum": [
+                "archive",
+                "primary",
+                "build"
+              ],
+              "type": "string"
+            },
+            "version": {
+              "default": "latest",
+              "description": "Version of the data to use. Uses the specific 'version' for the selected 'source' or the dataset tagged 'latest' for this source.",
+              "type": "string"
+            }
+          }
+        },
         "bfs_road_vehicle_stock": {
           "description": "Configuration for a single data source.",
           "properties": {
@@ -5689,6 +5709,11 @@
         "biomass_transport": {
           "default": false,
           "description": "Add option for transporting solid biomass between nodes.",
+          "type": "boolean"
+        },
+        "unsustainable_biomass_upstream_emissions": {
+          "default": false,
+          "description": "Add the upstream (feedstock cultivation) emissions of the unsustainable bioliquids and solid biomass per country, and price the unsustainable solid biomass as willow, using the unsustainable_biomass_upstream dataset (CO2-removal, based on JRC ENSPRESO).",
           "type": "boolean"
         },
         "biogas_upgrading": {
@@ -13395,6 +13420,11 @@
           "description": "Add option for transporting solid biomass between nodes.",
           "type": "boolean"
         },
+        "unsustainable_biomass_upstream_emissions": {
+          "default": false,
+          "description": "Add the upstream (feedstock cultivation) emissions of the unsustainable bioliquids and solid biomass per country, and price the unsustainable solid biomass as willow, using the unsustainable_biomass_upstream dataset (CO2-removal, based on JRC ENSPRESO).",
+          "type": "boolean"
+        },
         "biogas_upgrading": {
           "default": true,
           "description": "Biogas upgrading.",
@@ -15770,6 +15800,26 @@
           }
         },
         "natura": {
+          "description": "Configuration for a single data source.",
+          "properties": {
+            "source": {
+              "default": "archive",
+              "description": "Source of the data. 'archive' retrieves pre-built data, 'primary' retrieves from primary source.",
+              "enum": [
+                "archive",
+                "primary",
+                "build"
+              ],
+              "type": "string"
+            },
+            "version": {
+              "default": "latest",
+              "description": "Version of the data to use. Uses the specific 'version' for the selected 'source' or the dataset tagged 'latest' for this source.",
+              "type": "string"
+            }
+          }
+        },
+        "unsustainable_biomass_upstream": {
           "description": "Configuration for a single data source.",
           "properties": {
             "source": {

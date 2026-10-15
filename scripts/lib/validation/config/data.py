@@ -361,6 +361,10 @@ class DataConfig(BaseModel):
         default_factory=_DataSourceConfig,
         description="Natura data source configuration.",
     )
+    unsustainable_biomass_upstream: _DataSourceConfig = Field(
+        default_factory=lambda: _DataSourceConfig(source="primary"),
+        description="Upstream emission factors and price of unsustainable biomass per country (CO2-removal dataset) data source configuration.",
+    )
     bfs_road_vehicle_stock: _DataSourceConfig = Field(
         default_factory=lambda: _DataSourceConfig(source="primary"),
         description="BFS road vehicle stock data source configuration.",
