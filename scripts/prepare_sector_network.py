@@ -63,6 +63,7 @@ def define_spatial(nodes, options):
         spatial.biomass.nodes = nodes + " solid biomass"
         spatial.biomass.nodes_unsustainable = nodes + " unsustainable solid biomass"
         spatial.biomass.bioliquids = nodes + " unsustainable bioliquids"
+        spatial.biomass.oily_residues = nodes + " oily residues"
         spatial.biomass.locations = nodes
         spatial.msw.nodes = nodes + " municipal solid waste"
         spatial.msw.locations = nodes
@@ -70,6 +71,7 @@ def define_spatial(nodes, options):
         spatial.biomass.nodes = ["EU solid biomass"]
         spatial.biomass.nodes_unsustainable = ["EU unsustainable solid biomass"]
         spatial.biomass.bioliquids = ["EU unsustainable bioliquids"]
+        spatial.biomass.oily_residues = ["EU oily residues"]
         spatial.biomass.locations = ["EU"]
         spatial.msw.nodes = ["EU municipal solid waste"]
         spatial.msw.locations = ["EU"]
@@ -1788,7 +1790,7 @@ def add_electricity_grid_connection(n, costs):
     )
     n.generators.loc[gens, "capital_cost"] += costs.at[name, "capital_cost"]
     n.generators.loc[gens, "connection_onight_cost"] = costs.at[
-        "electricity grid connection", "investment"
+        "distribution grid reinforcement", "investment"
     ]
 
 
@@ -4029,6 +4031,9 @@ def add_biomass(
         unsustainable_liquid_biofuel_potentials_spatial = biomass_potentials[
             "unsustainable bioliquids"
         ].rename(index=lambda x: x + " unsustainable bioliquids")
+        oily_residue_potentials_spatial = biomass_potentials[
+            "oily residues"
+        ].rename(index=lambda x: x + " oily residues")
 
     else:
         solid_biomass_potentials_spatial = biomass_potentials["solid biomass"].sum()
@@ -4040,6 +4045,9 @@ def add_biomass(
         ].sum()
         unsustainable_liquid_biofuel_potentials_spatial = biomass_potentials[
             "unsustainable bioliquids"
+        ].sum()
+        oily_residue_potentials_spatial = biomass_potentials[
+            "oily residues"
         ].sum()
 
     # upstream (feedstock cultivation) emissions of unsustainable biomass per
@@ -4155,6 +4163,37 @@ def add_biomass(
         e_sum_min=0,
         e_sum_max=solid_biomass_potentials_spatial,
     )
+
+    n.add(
+        "Bus",
+        spatial.biomass.oily_residues,
+        location=spatial.biomass.locations,
+        carrier="oily residues",
+        unit="MWh_LHV",
+    )
+
+    n.add(
+        "Generator",
+        spatial.biomass.oily_residues,
+        bus=spatial.biomass.oily_residues,
+        carrier="oily residues",
+        p_nom_extendable=True,
+        marginal_cost=0,#costs.at["biodiesel crops", "fuel"],
+        e_sum_max=oily_residue_potentials_spatial,
+    )
+
+    n.add(
+        "Link",
+        spatial.biomass.oily_residues,
+        bus0=spatial.biomass.oily_residues,
+        bus1=spatial.oil.nodes,
+        carrier="HVO",
+        efficiency=0.9,
+        p_nom_extendable=True,
+        capital_cost=costs.at["HVO", "capital_cost"],
+        marginal_cost=costs.at["HVO", "VOM"],
+    )
+
 
     if options["solid_biomass_import"].get("enable", False):
         biomass_import_price = options["solid_biomass_import"]["price"]
@@ -4302,6 +4341,9 @@ def add_biomass(
             #p_nom=unsustainable_liquid_biofuel_potentials_spatial,
             marginal_cost=costs.at["BtL", "VOM"],
         )
+
+
+
 
     if options["biogas_upgrading"]:
         n.add(

@@ -74,6 +74,14 @@ df.loc[de, "unsustainable bioliquids"] = (
     * weights
 )
 
+#Add new column for oily residues
+df["oily residues"] = 0.0
+df.loc[de, "oily residues"] = (
+    subset.loc["Oily", year]
+    * weights
+)
+
+
 df.loc[de, "unsustainable biogas"] = (
     subset.loc["1st gen digestibles", year]
     * weights
