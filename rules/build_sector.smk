@@ -942,7 +942,7 @@ rule build_biomass_potentials:
 
 rule build_biomass_potentials_override:
     input:
-        biomip="resources/biomip_scenarios.ods",
+        biomip="resources/biomip_scenarios.csv",
         biomass_potentials=resources("biomass_potentials_{horizon}.csv"),
     output:
         resources("biomass_potentials_custom_{horizon}.csv"),
