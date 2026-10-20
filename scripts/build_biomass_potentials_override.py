@@ -38,7 +38,8 @@ biomip = pd.read_csv(
 subset = biomip.iloc[scenario_rows[scenario], 1:6].copy()
 
 subset.set_index("PJ", inplace=True)
-subset = subset.reindex(columns=["2030", "2035", "2040", "2045", "2050"])
+subset.columns = subset.columns.astype(int)
+subset = subset.reindex(columns=[2030, 2035, 2040, 2045, 2050])
 subset = subset.interpolate(axis=1) #Interpolate for intermediate years
 print(subset)
 
