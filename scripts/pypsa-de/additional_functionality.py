@@ -440,17 +440,26 @@ def add_national_co2_budgets(n, snakemake, national_co2_budgets, investment_year
 
     co2_total_totals = co2_totals[sectors].sum(axis=1) * nyears
 
+    relative = n.config["solving"]["constraints"]["co2_budget_national_mode"].get("relative", True)
+    
     for ct in national_co2_budgets:
+
         if ct != "DE":
             logger.error(
                 f"CO2 budget for countries other than `DE` is not yet supported. Found country {ct}. Please check the config file."
             )
 
-        limit = co2_total_totals[ct] * national_co2_budgets[ct][investment_year]
-        logger.info(
-            f"Limiting emissions in country {ct} to {national_co2_budgets[ct][investment_year]:.1%} of "
-            f"1990 levels, i.e. {limit:,.2f} tCO2/a",
-        )
+        budget_value = national_co2_budgets[ct][investment_year]
+        
+        if relative:
+            limit = co2_total_totals[ct] * budget_value
+            logger.info(
+                f"Limiting emissions in country {ct} to {budget_value:.1%} of "
+                f"1990 levels, i.e. {limit:,.2f} tCO2/a",
+                )
+        else:
+            limit = budget_value * 1e6
+            logger.info(f"Limiting emissions in country {ct} to "f"{budget_value:,.2f} MtCO2/a")
 
         lhs = []
 
