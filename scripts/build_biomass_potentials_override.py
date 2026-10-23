@@ -1,4 +1,4 @@
-import pandas as pd
+iimport pandas as pd
 from _helpers import configure_logging
 
 if "snakemake" not in globals():
@@ -39,7 +39,7 @@ subset = biomip.iloc[scenario_rows[scenario], 1:6].copy()
 
 subset.set_index("PJ", inplace=True)
 subset.columns = subset.columns.astype(int)
-subset = subset.reindex(columns=[2030, 2035, 2040, 2045, 2050])
+subset = subset.reindex(columns=[2020, 2025, 2030, 2035, 2040, 2045, 2050])
 subset = subset.interpolate(axis=1) #Interpolate for intermediate years
 print(subset)
 
