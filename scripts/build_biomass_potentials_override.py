@@ -1,4 +1,4 @@
-iimport pandas as pd
+import pandas as pd
 from _helpers import configure_logging
 
 if "snakemake" not in globals():
