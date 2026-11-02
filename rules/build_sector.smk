@@ -944,8 +944,12 @@ rule build_biomass_potentials_override:
     input:
         biomip="resources/biomip_scenarios.csv",
         biomass_potentials=resources("biomass_potentials_{horizon}.csv"),
+        biomass_potentials_all=resources("biomass_potentials_all_{horizon}.csv"),
     output:
         resources("biomass_potentials_custom_{horizon}.csv"),
+    params:
+        biomip_scenario=config_provider("biomass", "biomip_scenario"),
+        biomass_classes=config_provider("biomass", "classes"),
     script:
         scripts("build_biomass_potentials_override.py")
 

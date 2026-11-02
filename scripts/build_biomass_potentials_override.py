@@ -10,7 +10,8 @@ if "snakemake" not in globals():
 
 #configure_logging(snakemake)
 
-scenario = snakemake.config["biomass"]["biomip_scenario"].lower()
+# read via params so per-scenario overrides from scenarios.biomip.yaml are applied
+scenario = snakemake.params.biomip_scenario.lower()
 
 # Map config scenario -> row block in BioMIP sheet
 scenario_rows = {
@@ -60,10 +61,23 @@ df = pd.read_csv(
 
 de = df.index.str.startswith("DE")
 
-weights = (
-    df.loc[de, "solid biomass"]
-    / df.loc[de, "solid biomass"].sum()
+# Distribute national BioMIP potentials by the regional solid biomass potential.
+# Use the raw ENSPRESO classes, since the "solid biomass" column above is scaled by
+# share_sustainable_potential_available, which is 0 in early years (0/0 -> NaN,
+# which PyPSA reads as an unlimited potential).
+df_all = pd.read_csv(
+    snakemake.input.biomass_potentials_all,
+    index_col=0,
 )
+solid_biomass_classes = snakemake.params.biomass_classes["solid biomass"]
+solid_biomass_all = df_all.loc[df.index[de], solid_biomass_classes].sum(axis=1)
+
+weights = solid_biomass_all / solid_biomass_all.sum()
+
+if weights.isna().any() or not abs(weights.sum() - 1) < 1e-6:
+    raise ValueError(
+        f"Invalid regional weights for BioMIP biomass potentials in {year}: {weights}"
+    )
 
 # -------------------------------
 # BioMIP → PyPSA-Eur mapping
