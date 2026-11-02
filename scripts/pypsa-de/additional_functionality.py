@@ -459,7 +459,9 @@ def add_national_co2_budgets(n, snakemake, national_co2_budgets, investment_year
                 )
         else:
             limit = budget_value * 1e6
-            logger.info(f"Limiting emissions in country {ct} to "f"{budget_value:,.2f} MtCO2/a")
+            share_of_1990 = limit / co2_total_totals[ct]
+            print(share_of_1990)
+            logger.info(f"Limiting emissions in country {ct} to "f"{budget_value:,.2f} MtCO2/a, or {share_of_1990:.1%} of 1990 levels")
 
         lhs = []
 
@@ -934,6 +936,61 @@ def add_decentral_heat_budgets(n, decentral_heat_budgets, investment_year):
             )
 
 
+def add_biomass_import_ban(n, countries):
+    """
+    Limit solid biomass use in each country to its own potential.
+
+    With biomass_spatial, the "<node> solid biomass transported" generators have no
+    regional limit and only count towards the EU-wide biomass limit, so a country
+    can draw on other countries' potentials. This caps the sum of local and
+    transported generation in the country at the sum of its local potentials,
+    which still allows transport between the country's own nodes.
+    """
+    for ct in countries:
+        for carrier in ["solid biomass", "unsustainable solid biomass"]:
+            gens = n.generators.index[
+                (n.generators.carrier == carrier) & n.generators.index.str.startswith(ct)
+            ]
+            if gens.empty:
+                continue
+
+            local = gens[~gens.str.endswith(" transported")]
+            limit = n.generators.loc[local, "e_sum_max"].sum()
+            if limit == float("inf"):
+                logger.warning(
+                    f"Unlimited {carrier} potential in {ct}. Skipping biomass import ban."
+                )
+                continue
+
+            logger.info(
+                f"Banning {carrier} imports to {ct}: limiting use to {limit / 1e6:.2f} TWh.",
+            )
+
+            lhs = (
+                n.model["Generator-p"].loc[:, gens] * n.snapshot_weightings.generators
+            ).sum()
+
+            cname = f"{carrier}_import_ban-{ct}"
+            if cname in n.global_constraints.index:
+                logger.warning(
+                    f"Global constraint {cname} already exists. Dropping and adding it again."
+                )
+                n.global_constraints.drop(cname, inplace=True)
+
+            n.model.add_constraints(
+                lhs <= limit,
+                name=f"GlobalConstraint-{cname}",
+            )
+            n.add(
+                "GlobalConstraint",
+                cname,
+                constant=limit,
+                sense="<=",
+                type="",
+                carrier_attribute="",
+            )
+
+
 def additional_functionality(n, snapshots, snakemake):
     logger.info("Adding Ariadne-specific functionality")
 
@@ -984,6 +1041,9 @@ def additional_functionality(n, snapshots, snakemake):
             constraints["decentral_heat_budgets"],
             investment_year,
         )
+
+    if constraints.get("biomass_import_ban"):
+        add_biomass_import_ban(n, constraints["biomass_import_ban"])
 
     if investment_year == 2020:
         adapt_nuclear_output(n)
