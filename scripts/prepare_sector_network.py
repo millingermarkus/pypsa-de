@@ -4178,7 +4178,7 @@ def add_biomass(
         bus=spatial.biomass.oily_residues,
         carrier="oily residues",
         p_nom_extendable=True,
-        marginal_cost=0,#costs.at["biodiesel crops", "fuel"],
+        marginal_cost=costs.at["biodiesel crops", "fuel"],
         e_sum_max=oily_residue_potentials_spatial,
     )
 
@@ -4313,7 +4313,7 @@ def add_biomass(
             carrier="unsustainable bioliquids",
             #p_nom_max=unsustainable_liquid_biofuel_potentials_spatial,
             p_nom_extendable=True,
-            marginal_cost=36, #10 EUR/GJ = 36 EUR/MWh. Based on http://dx.doi.org/10.1016/j.jclepro.2016.11.175, assuming sugar beet in Germany
+            marginal_cost=90, #10 EUR/GJ = 36 EUR/MWh. Based on http://dx.doi.org/10.1016/j.jclepro.2016.11.175, assuming sugar beet in Germany
             #e_sum_min=unsustainable_liquid_biofuel_potentials_spatial,
             e_sum_max=unsustainable_liquid_biofuel_potentials_spatial,
         )
@@ -4334,13 +4334,13 @@ def add_biomass(
             bus1=spatial.oil.nodes,
             bus2="co2 atmosphere",
             carrier="unsustainable bioliquids",
-            efficiency=costs.at["ethanol from sugar crops", "efficiency"],
+            efficiency=1.0,
             efficiency2=-costs.at["oil", "CO2 intensity"]
             + bioliquids_upstream_emissions,
             p_nom_extendable=True,
             #p_nom=unsustainable_liquid_biofuel_potentials_spatial,
             #capital_cost=costs.at["ethanol from sugar crops", "capital_cost"],
-            marginal_cost=costs.at["ethanol from sugar crops", "VOM"],
+            #marginal_cost=costs.at["ethanol from sugar crops", "VOM"],
         )
 
 
